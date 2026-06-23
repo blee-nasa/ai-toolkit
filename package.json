@@ -1,0 +1,10 @@
+{
+  "name": "ai-toolkit",
+  "version": "0.1.0",
+  "description": "Project-agnostic, portable AI dev tooling — single source of truth under .claude/, read natively by Claude Code and GitHub Copilot.",
+  "private": true,
+  "scripts": {
+    "generate:agent": "bash scripts/generate-agent.sh",
+    "generate:skill": "bash scripts/generate-skill.sh"
+  }
+}
