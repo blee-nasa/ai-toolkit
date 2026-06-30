@@ -2,7 +2,7 @@
 name: add-alias
 description: Add an import path alias to this repo's Vite + TypeScript app — e.g. "@components" → "src/components" — so it resolves in both Vite and TypeScript. Locates the app via its vite.config.ts, edits that app's tsconfig.app.json paths, and turns on resolve.tsconfigPaths in its vite.config.ts if needed. Use when asked to add, create, or set up a path alias or import shortcut.
 model: haiku
-argument-hint: <@alias> <src/target-dir>
+argument-hint: <@alias> <target-dir>
 ---
 
 # Add Alias
@@ -14,9 +14,13 @@ Add an import alias to this repo's Vite + TypeScript app so that
 ## Inputs
 
 Exactly two arguments:
-1. `<@alias>` — the alias name, always starting with `@` (e.g. `@components`).
-2. `<src/target-dir>` — the target folder **relative to the app root**, always
-   under `src/` (e.g. `src/components`).
+1. `<@alias>` — the alias name, normally written with a leading `@` (e.g.
+   `@components`). If the argument is given WITHOUT a leading `@` (e.g.
+   `components`), prepend one and use `@components`. Otherwise use it verbatim.
+2. `<target-dir>` — the target folder **relative to the app root**, usually under
+   `src/` (e.g. `src/components`) but it may be any folder in the app (e.g.
+   `public/assets`). Use the path exactly as given, whether or not it starts with
+   `src/`.
 
 Example: `/add-alias @components src/components`
 
@@ -30,7 +34,7 @@ If it is not there, find the app instead: search the repo for `tsconfig.app.json
 that contains it. If there are several, ask which app.
 
 Both routes are normal — neither is a mistake. Everything below happens inside
-the app root, and `<src/target-dir>` is relative to it.
+the app root, and `<target-dir>` is relative to it.
 
 ## Done = both of these are true (inside the app root)
 
@@ -75,8 +79,8 @@ Inside `compilerOptions`:
 - If there is no `paths` key, add one.
 - Add BOTH entries for the alias, each value a one-item array with a leading
   `./`:
-  - `"<@alias>": ["./<src/target-dir>"]`
-  - `"<@alias>/*": ["./<src/target-dir>/*"]`
+  - `"<@alias>": ["./<target-dir>"]`
+  - `"<@alias>/*": ["./<target-dir>/*"]`
 - MERGE with any existing entries — never delete or overwrite the others.
 - If both entries already exist exactly, change nothing (it is already done).
 - Keep valid JSON: comma between entries, no trailing comma.
@@ -85,7 +89,8 @@ Inside `compilerOptions`:
 
 Re-read the `paths` block and check both new entries are present and spelled
 correctly. Report the alias you added, the app root, and which file(s) you
-changed.
+changed. Also call out anything you adjusted — a missing `@` you prepended, or a
+target outside `src/` — so the change is never silent.
 
 ## Worked example — merging into existing paths
 
