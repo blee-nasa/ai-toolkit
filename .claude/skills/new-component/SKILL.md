@@ -90,9 +90,14 @@ Then, with the folder decided:
 - **Does NOT exist** → confirm with the user that a new `<folder>/` should be
   created. If yes:
   1. create the folder,
-  2. give it an import alias `@<folder>` → `src/<folder>` (follow the **add-alias**
-     skill: add both bare + wildcard entries to the app's `tsconfig.app.json`
-     `paths`, and turn on `resolve.tsconfigPaths` in `vite.config.ts` if needed),
+  2. give it an import alias `@<folder>` → `src/<folder>`, written EXACTLY as the
+     **add-alias** skill does — no more: in `tsconfig.app.json`'s
+     `compilerOptions.paths`, add both entries with a **leading `./`** —
+     `"@<folder>": ["./src/<folder>"]` and `"@<folder>/*": ["./src/<folder>/*"]` —
+     and turn on `resolve: { tsconfigPaths: true }` in `vite.config.ts` if it is
+     not already on. Do **NOT** add `baseUrl`, `ignoreDeprecations`, or any other
+     tsconfig option — bundler resolution needs none of them, and they cause
+     conflicts,
   3. create its aggregate `src/<folder>/index.ts` barrel.
 
 ### 5. Scaffold the item
@@ -306,14 +311,40 @@ describe("useExample", () => {
 
 ## Setting up a test suite (when offered + accepted)
 
-Match the runner already implied by the project; default to **vitest**. Install
-dev dependencies: `vitest`, `@testing-library/react`, `@testing-library/jest-dom`,
-`jsdom`. Then:
+Use **vitest** (it reuses the Vite config). From the app folder, install the dev
+dependencies:
 
-- add a `test` block to `vite.config.ts` (`environment: 'jsdom'`,
-  `setupFiles: ['./src/test-setup.ts']`) with `/// <reference types="vitest/config" />`
-  at the top;
-- create `src/test-setup.ts` containing `import '@testing-library/jest-dom';`
-- add a `"test": "vitest"` script to `package.json`.
+```sh
+npm i -D vitest @testing-library/react @testing-library/jest-dom jsdom
+```
 
-Tests use explicit imports (above), so vitest `globals` stays off.
+Then make exactly these three changes — copy them verbatim:
+
+1. Add the vitest types reference as the FIRST line of `vite.config.ts`, and a
+   `test` block to the config:
+   ```ts
+   /// <reference types="vitest/config" />
+   import { defineConfig } from 'vite'
+   import react from '@vitejs/plugin-react'
+
+   export default defineConfig({
+     plugins: [react()],
+     test: {
+       environment: 'jsdom',
+       setupFiles: ['./src/test-setup.ts'],
+     },
+   })
+   ```
+2. Create `src/test-setup.ts` with EXACTLY this line — it must be the `/vitest`
+   entry. Plain `import '@testing-library/jest-dom'` will NOT register the matchers
+   with vitest's `expect`, and `toBeInTheDocument` will fail to type-check:
+   ```ts
+   import '@testing-library/jest-dom/vitest'
+   ```
+3. Add a `test` script to the app's `package.json`:
+   ```json
+   "test": "vitest run"
+   ```
+
+Leave vitest `globals` off — tests use explicit imports. After this, `npm test`
+runs and `tsc -b` still passes with the test files present.

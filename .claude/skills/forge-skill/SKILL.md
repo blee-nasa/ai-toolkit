@@ -18,6 +18,11 @@ that a cheap model executes it without ever stopping to figure things out.
 - **Target = cheap models.** Everything produced is optimized for Haiku / Copilot
   to run flawlessly. Favor explicit steps, worked examples, and copy-paste
   templates over anything open-ended.
+- **Counter the model's strong priors — by name.** Cheap models carry stubborn
+  habits from training (e.g. adding a tsconfig `baseUrl` for path aliases, even
+  when it's wrong and unasked-for). Omitting the thing isn't enough — silence lets
+  the prior win. When the forge exposes such a habit, the skill must *forbid it
+  explicitly* ("do NOT add `baseUrl`"), not just leave it unmentioned.
 - **Tripping is the enemy.** A test model "trips" when it either (a) produces the
   wrong output, OR (b) burns cycles/tokens figuring out what to do — guessing,
   asking, exploring, backtracking, re-reading. Both count as trips.
