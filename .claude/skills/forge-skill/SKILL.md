@@ -89,6 +89,9 @@ converged.
    (correctness), and did the trajectory stay lean (efficiency)? It rules each run
    **clean** or **tripped**, and for every trip names the failure mode (wrong
    output vs. wasted cycles) and the specific gap in the skill that caused it.
+   The judge is not infallible — sanity-check its factual claims about external
+   tools or APIs empirically (a build or run is ground truth over model memory)
+   before hardening on them.
 3. **Clean?** If the judge passes all five, the skill is forged — go to Report.
 4. **Diagnose & harden** — otherwise, aggregate the gaps the judge found across
    the tripped runs (fold any newly surfaced edge case into the scenario pool),

@@ -19,8 +19,9 @@ Exactly two arguments:
    `components`), prepend one and use `@components`. Otherwise use it verbatim.
 2. `<target-dir>` — the target folder **relative to the app root**, usually under
    `src/` (e.g. `src/components`) but it may be any folder in the app (e.g.
-   `public/assets`). Use the path exactly as given, whether or not it starts with
-   `src/`.
+   `public/assets`). First normalize it: strip a trailing slash (`src/ui/` →
+   `src/ui`) and a leading `./` (`./src/x` → `src/x`). Then build both entries from
+   the normalized value, whether or not it starts with `src/`.
 
 Example: `/add-alias @components src/components`
 
@@ -53,12 +54,22 @@ the app root, and `<target-dir>` is relative to it.
 
 Open `<app>/vite.config.ts`.
 - If it already has `resolve: { tsconfigPaths: true }`, leave it as is.
-- If not, add it to the config object:
+- If there is NO `resolve` block, add one:
   ```ts
   export default defineConfig({
     plugins: [react()],
     resolve: { tsconfigPaths: true },
   })
+  ```
+- If a `resolve` block already exists but lacks `tsconfigPaths`, add
+  `tsconfigPaths: true` as a key INSIDE that existing block — never add a second
+  `resolve` key (a duplicate key is invalid and silently drops the existing
+  options like `dedupe` or `alias`):
+  ```ts
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+    tsconfigPaths: true,
+  },
   ```
 Do NOT install any package — `tsconfigPaths` is a built-in Vite option.
 
@@ -82,7 +93,13 @@ Inside `compilerOptions`:
   - `"<@alias>": ["./<target-dir>"]`
   - `"<@alias>/*": ["./<target-dir>/*"]`
 - MERGE with any existing entries — never delete or overwrite the others.
-- If both entries already exist exactly, change nothing (it is already done).
+- If both entries already exist and both already point to this same
+  `<target-dir>`, change nothing (it is already done).
+- **Conflict:** if `<@alias>` (or `<@alias>/*`) already exists but points to a
+  DIFFERENT target, do NOT silently overwrite it — that would redirect every
+  existing `@alias/...` import in the codebase. STOP and report the conflict (the
+  alias, its current target, and the requested one) and ask whether to remap.
+  Overwrite both entries only if the user confirms, and say so in your report.
 - Keep valid JSON: comma between entries, no trailing comma.
 
 ## Step 4 — Confirm
