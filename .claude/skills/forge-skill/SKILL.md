@@ -1,6 +1,6 @@
 ---
 name: forge-skill
-description: Forge a new Claude Code skill for cheap models like Haiku or Copilot — gather requirements, draft it, then battle-test it against 5 sequential Haiku runs and harden it until they run clean. Use when the user wants to author, generate, forge, or harden a skill.
+description: Forge a new Claude Code skill for cheap models like Haiku or Copilot — gather requirements, draft it, then battle-test it against sequential Haiku runs and harden it until they run clean. Use when the user wants to author, generate, forge, or harden a skill.
 model: opus
 effort: max
 ---
@@ -52,11 +52,13 @@ guess. Capture:
 - name, one-line purpose, and the exact conditions that should trigger it;
 - inputs/arguments and the precise expected output or behavior;
 - the target model(s) it will run on (Haiku, Copilot, etc.);
-- **at least 5 distinct test scenarios paired with their correct/expected
-  outputs**, spanning the happy path and the edge cases — one feeds each Haiku
-  run, and they are the ground truth used later to detect trips. No ground truth →
-  no way to judge correctness. Set up any fixtures the scenarios need (real target
-  files/dirs, varied starting states) so the runs are realistic;
+- **distinct test scenarios paired with their correct/expected outputs** — as
+  many as the skill's surface warrants (no fixed count; a small skill may need a
+  handful, a broad one many more), spanning the happy path and the edge cases.
+  One feeds each Haiku run, and they are the ground truth used later to detect
+  trips. No ground truth → no way to judge correctness. Set up any fixtures the
+  scenarios need (real target files/dirs, varied starting states) so the runs are
+  realistic;
 - known edge cases, constraints, and the tools it needs.
 
 Ask follow-ups until the spec is unambiguous.
@@ -70,29 +72,32 @@ frontmatter for its cheap target (do NOT copy this forge skill's Opus/max
 settings into it).
 
 ### 3. Forge (test-and-harden loop)
-Drive this loop with the Workflow tool. Repeat each round until the judge passes
-all five runs, or stop after **5 rounds** and report the skill as not yet
-converged.
+Drive this loop with the Workflow tool. A round runs every planned scenario,
+judges them, and hardens against any trips; re-run until a round comes back fully
+clean. There is **no fixed scenario count and no round cap** — runs are
+sequential, so batch size doesn't matter; expect several rounds, and add scenarios
+as new gaps surface. Stop when a round is clean (or you've covered the surface and
+are confident); report if it is not converging.
 
-1. **Test (coverage)** — run **5 Haiku agents, one per scenario** (`model:
-   'haiku'`), each given the produced skill and a **different** scenario, so one
-   round covers five distinct angles (happy path + edge cases) rather than the
-   same case five times. Run them **sequentially**, resetting the workspace to a
-   clean baseline between runs (or give each its own isolated copy) — never let
-   agents mutate the same files at once, or they clobber each other. Each Haiku
+1. **Test (coverage)** — run **one Haiku agent per scenario** (`model: 'haiku'`),
+   each given the produced skill and a **different** scenario, so the round covers
+   distinct angles (happy path + edge cases) rather than the same case repeated.
+   Run them **sequentially**, resetting the workspace to a clean baseline between
+   runs (or give each its own isolated copy) — never let agents mutate the same
+   files at once, or they clobber each other. Each Haiku
    executes the skill as a fresh cheap model would and returns raw data only: the
    output it produced, a factual log of what it did (steps taken, anywhere it
    paused / guessed / asked / backtracked), and its tool-call count. The Haiku
    does NOT judge itself.
 2. **Judge (outside, Opus)** — an independent Opus judge (never the test models)
-   scores each of the five runs against its ground truth: did the output match
+   scores each run against its ground truth: did the output match
    (correctness), and did the trajectory stay lean (efficiency)? It rules each run
    **clean** or **tripped**, and for every trip names the failure mode (wrong
    output vs. wasted cycles) and the specific gap in the skill that caused it.
    The judge is not infallible — sanity-check its factual claims about external
    tools or APIs empirically (a build or run is ground truth over model memory)
    before hardening on them.
-3. **Clean?** If the judge passes all five, the skill is forged — go to Report.
+3. **Clean?** If the judge passes every run, the skill is forged — go to Report.
 4. **Diagnose & harden** — otherwise, aggregate the gaps the judge found across
    the tripped runs (fold any newly surfaced edge case into the scenario pool),
    rewrite the skill to close them, and loop with fresh Haikus.
